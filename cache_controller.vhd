@@ -40,19 +40,49 @@ architecture rtl of CacheController is
   signal dataArrayAddr                  : std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
   signal dataArrayWrData                : data_block_t;
   signal dataArrayRdData                : data_set_t;
+
+
+  -- Signals defined here until we create the components ----------------------------------------------
+  -- I think we will have to create little components and then integrate them in this file like 
+  -- TagArray_1 and DataArray_1 below. Then we can use internals signals to use them.
+  signal cpuReqRegWrEn : std_logic; 
+  signal victimRegWrEn : std_logic; 
+  signal busOutEn  : std_logic; 
+  signal cacheRdOutEn : std_logic;
   
 begin  -- architecture rtl
 
   comb_proc : process () is
   begin  -- process comb_proc
-    -- signals that need initialization
+    -- internal flags default values
     cacheStNext <= cacheSt;
+    cpuReqRegWrEn <= '0';
+    victimRegWrEn <= '0';
+    tagLookupEn <= '0';
+    tagWrEn <= '0';
+    tagWrSetDirty <= '0';
+    dataArrayWrEn <= '0';
+    dataArrayWrWord <= '0';
+    busOutEn <= '0';
+    cacheRdOutEn <= '0';
+
+    -- output default values
+    cacheDone <= '0';
+    busReq <= '0';
 
     -- signals with dont care initialization
 
     -- control: state machine
     case cacheSt is
       when ST_IDLE =>
+        if (cacheCs = '1' and cacheWrite = '1') then
+          cacheStNext <= ST_WR_HIT_TEST;
+          cpuReqRegWrEn <= '1';
+          dataArrayAddr <= cacheAddr;
+          tagAddr <= cacheAddr;
+          tagLookupEn <= '1';
+        end if;
+
       -----------------------------------------------------------------------
       -- rd state machine
       -----------------------------------------------------------------------
@@ -68,8 +98,38 @@ begin  -- architecture rtl
       -- wr state machine
       -----------------------------------------------------------------------
       when ST_WR_HIT_TEST =>
+        if (tagHitEn = '1') then 
+          cacheStNext <= ST_IDLE;
+          cacheDone <= '1';
+          tagWrEn <= '1';
+          tagWrSet <= tagHitSet;
+          tagWrSetDirty <= '1';
+          tagAddr <= cpuReqRegAddr;
+          dataArrayWrEn <= '1';
+          dataArrayWrWord <= '1';
+          dataArrayWrSetIdx <= tagHitSet;
+          dataArrayWrData <= cpuReqRegData;
+        else 
+          cacheStNext <= ST_WR_WAIT_BUS_GRANT;
+        end if;
 
       when ST_WR_WAIT_BUS_GRANT =>
+        if (busGrant = '1') then
+          cacheStNext <= ST_WR_WAIT_BUS_COMPLETE;
+          busReq <= '1';
+          busOutEn <= '1';
+          busCmd <= BUS_WRITE_WORD;
+          busAddrIn <= cpuReqRegAddr;
+          busDataIn <= cpuReqRegData;
+        else
+          busReq <= '1';
+        end if;
+
+      when ST_WR_WAIT_BUS_COMPLETE =>
+        if (busGrant = '0') then
+          cacheStNext <= ST_IDLE;
+          cacheDone <= '1';
+        end if;
 
       when others => null;
     end case;

@@ -42,14 +42,17 @@ architecture rtl of CacheController is
   signal dataArrayRdData                : data_set_t;
 
 
-  -- Signals defined here until we create the components ----------------------------------------------
-  -- I think we will have to create little components and then integrate them in this file like 
-  -- TagArray_1 and DataArray_1 below. Then we can use internals signals to use them.
-  signal cpuReqRegWrEn : std_logic; 
-  signal victimRegWrEn : std_logic; 
-  signal busOutEn  : std_logic; 
-  signal cacheRdOutEn : std_logic;
-  
+  -------------------------- README BITCH --------------------------
+  -- a bit more tricky than for bus controller 
+  -- we gotta implement the 3 components (tristatebuffer, cpureqreg and victumreg) : easy
+  -- but we gotta link all that shit with all the muxes and breakers like on the datapath
+  -- each input or ouput (in the port list above) is grey on the PDF datapath
+  -- we probably have to create an internal signal for each of the input/output of our intern component, 
+  -- like they did for DataArray and TagArray
+  -- then we map then to the components
+  -- but how can we link all the mutliplixers and stuff ? if we have to declare an internal signal for each output/in of them, this is a shit ton
+
+  --also, the write state machine is more or less coded, with intern signal (supposed to be linked to intern components), that doesn't exist yet.
 begin  -- architecture rtl
 
   comb_proc : process () is

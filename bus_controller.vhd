@@ -29,7 +29,10 @@ architecture rtl of BusController is
   signal arbiterReqValid  : std_logic;
   signal arbiterReqId     : std_logic_vector(CACHE_IDX_WIDTH-1 downto 0);
 
-  signal busOutEn         : std_logic; -- <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< WTF IS THIS IN THE DIAGRAM ?
+  -- Signals defined here until we create the components ----------------------------------------------
+  -- I think we will have to create little components and then integrate them in this file like 
+  -- TagArray_1 and DataArray_1 below. Then we can use internals signals to use them.
+  signal busOutEn         : std_logic;
   
 begin  -- architecture rtl
 

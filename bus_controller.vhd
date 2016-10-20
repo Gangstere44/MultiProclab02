@@ -28,21 +28,46 @@ architecture rtl of BusController is
   signal arbiterArbitrate : std_logic;
   signal arbiterReqValid  : std_logic;
   signal arbiterReqId     : std_logic_vector(CACHE_IDX_WIDTH-1 downto 0);
+
+  signal busOutEn         : std_logic; -- <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< WTF IS THIS IN THE DIAGRAM ?
   
 begin  -- architecture rtl
 
-  comb_proc : process () is
+  comb_proc : process (arbiterReqValid, memDone) is
   begin  -- process comb_proc
-    -- signals that need initialization here
+    -- internal signals default values
     busStNext <= busSt;
-	arbiterArbitrate <= '0';
+    arbiterArbitrate <= '0';
+    busOutEn <= '0';
+
+    -- outputs default values
+    busGrant <= '0';
+    memCs <= '0';
+
     -- signal with dont care initialization here
 
     -- control: state machine
     case busSt is
       when ST_IDLE =>
+        if (arbiterReqValid = '1') then
+          busStNext <= ST_GRANT;
+        end if;
+
       when ST_GRANT =>
+        busStNext <= ST_WAIT_MEM;
+        arbiterArbitrate <= '1';
+        busGrant(to_integer(unsigned(arbiterReqId))) <= '1';
+        memCs <= '1';
+
       when ST_WAIT_MEM =>
+        if (memDone = '0') then
+          -- Do not update the state
+          busGrant(to_integer(unsigned(arbiterReqId))) <= '1';
+        else
+          busStNext <= ST_IDLE;
+          busOutEn <= '1';
+        end if;
+
       when others => null;
     end case;
 

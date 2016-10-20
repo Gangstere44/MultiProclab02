@@ -29,9 +29,7 @@ architecture rtl of BusController is
   signal arbiterReqValid  : std_logic;
   signal arbiterReqId     : std_logic_vector(CACHE_IDX_WIDTH-1 downto 0);
 
-  -- Signals defined here until we create the components ----------------------------------------------
-  -- I think we will have to create little components and then integrate them in this file like 
-  -- TagArray_1 and DataArray_1 below. Then we can use internals signals to use them.
+  -- Intern signal used to control the tri state buffer
   signal busOutEn         : std_logic;
   
 begin  -- architecture rtl
@@ -85,6 +83,12 @@ begin  -- architecture rtl
       arbiterReqValid  => arbiterReqValid,
       arbiterReqId     => arbiterReqId);
 
+  BusTriStateBuffer_1 : BusTriStateBuffer
+    port map (
+      busOutEn   => busOutEn,
+      busDataIn  => memRdData,
+      busData    => busData);
+
   
   clk_proc : process (clk, rst) is
   begin  -- process clk_proc
@@ -96,3 +100,24 @@ begin  -- architecture rtl
   end process clk_proc;
 
 end architecture rtl;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.mem_types.all;
+use work.mem_components.all;
+
+entity BusTriStateBuffer is
+
+  port (
+    busOutEn  : in  std_logic;
+    busDataIn : in  data_block_t;
+    busData   : out data_block_t);
+
+end entity BusTriStateBuffer;
+
+architecture tsb of BusTriStateBuffer is
+
+begin
+    busData <= busDataIn when (busOutEn = '1') else 'Z';
+end tsb;

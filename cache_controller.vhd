@@ -272,9 +272,9 @@ end entity BusTriStateBufferForCacheController;
 architecture tsb of BusTriStateBufferForCacheController is
 
 begin
-    busData		<= busDataIn when (busOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
-	busCmd  	<= busCmdIn  when (busOutEn = '1') else BUS_READ;
-    busAddrIn	<= busAddr when (busOutEn = '1') else (others => 'Z');
+  busData		<= busDataIn when (busOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
+	busCmd  	<= busCmdIn  when (busOutEn = '1') else (others => 'Z');
+  busAddrIn	<= busAddr when (busOutEn = '1') else (others => 'Z');
 end architecture tsb;
 
 library ieee;
@@ -298,7 +298,11 @@ end entity CpuReqReg;
 architecture crr of CpuReqReg is
 
 begin
--- TODO
+  if (cpuReqRegWrEn = '1') then 
+    cpuReqRegAddr <= cpuReqRegAddrIn;
+    cpuReqRegData <= cpuReqRegDataIn;
+    cpuReqRegWord <= cpuReqRegDataIn(getBlockIdx(cpuReqRegAddrIn));
+  end if;
 
 end architecture crr;
 
@@ -326,7 +330,12 @@ end entity VictimReg;
 architecture vr of VictimReg is
 
 begin
--- TODO
+  if (victimRegWrEn = '1') then 
+    victimRegSet <= victimRegSetIn;
+    victimRegDirty <= victimRegDirtyIn;
+    victimRegAddr <= victimRegAddrIn;
+    victimRegData <= victimRegDataIn;
+  end if;
 
 end architecture vr;
 
@@ -350,6 +359,6 @@ end entity RdDataTriStateBuffer;
 architecture rdtsb of RdDataTriStateBuffer is
 
 begin
--- TODO
+  cacheRdData   <= cacheRdDataIn when (cacheRdOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
 end architecture rdtsb;
 

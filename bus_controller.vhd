@@ -83,7 +83,7 @@ begin  -- architecture rtl
       arbiterReqValid  => arbiterReqValid,
       arbiterReqId     => arbiterReqId);
 
-  BusTriStateBuffer_1 : BusTriStateBuffer
+  BusTriStateBufferForBusController_1 : BusTriStateBufferForBusController
     port map (
       busOutEn   => busOutEn,
       busDataIn  => memRdData,
@@ -107,17 +107,17 @@ use ieee.numeric_std.all;
 use work.mem_types.all;
 use work.mem_components.all;
 
-entity BusTriStateBuffer is
+entity BusTriStateBufferForBusController is
 
   port (
     busOutEn  : in  std_logic;
     busDataIn : in  data_block_t;
     busData   : out data_block_t);
 
-end entity BusTriStateBuffer;
+end entity BusTriStateBufferForBusController;
 
-architecture tsb of BusTriStateBuffer is
+architecture tsb of BusTriStateBufferForBusController is
 
 begin
-    busData <= busDataIn when (busOutEn = '1') else 'Z';
+    busData <= busDataIn when (busOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
 end tsb;

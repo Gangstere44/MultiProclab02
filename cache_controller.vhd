@@ -41,6 +41,47 @@ architecture rtl of CacheController is
   signal dataArrayWrData                : data_block_t;
   signal dataArrayRdData                : data_set_t;
 
+  -- begin ADDED internal signal
+  
+  -- evident signal on the graph
+  signal victimRegAddr	: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0); 	
+  signal victimRegData	: data_block_t;
+  
+  signal cpuRegReqWord	: std_logic;
+  
+  -- signal uses by the muxs and the breakers
+  
+  signal breaker1word1 : data_word_t;
+  signal breaker1word2 : data_word_t;
+  
+  signal breaker2block1 : data_block_t;
+  signal breaker2block2 : data_block_t;
+  
+  signal breaker3word1 : data_word_t;
+  signal breaker3word2 : data_word_t;
+  
+  signal mux11input1 : ;
+  signal mux11input2 : ;
+  signal mux11output : ;
+  
+
+  
+  signal mux4input1 : data_block_t;
+  signal mux4input2 : data_block_t;
+  signal mux4output : data_block_t;
+  
+  signal mux5input1 : data_block_t;
+  signal mux5input2 : data_block_t;
+  signal mux5output : data_block_t;
+  
+  signal mux6input1 : data_word_t;
+  signal mux6input2 : data_word_t;
+  signal mux6output : data_word_t;
+  
+  signal mux7input2 : data_word_t;
+  signal mux7output : data_word_t;
+  
+  -- end ADDED internal signal
 
   -------------------------- README BITCH --------------------------
   -- a bit more tricky than for bus controller 
@@ -153,7 +194,71 @@ begin  -- architecture rtl
 
   end process comb_proc;
 
-  TagArray_1 : TagArray
+  -- begin ADDED process
+  
+ -- the mux process are define muxXY, 
+ -- X being the position on the col where they appear on the graph (1 - 7) 
+ -- Y is the position on the line (1 - 3)
+ 
+ -- same for the breaker
+ 
+ -- mux
+ 
+ comb mux11 : process() is
+ 
+ end process mux11;
+
+  comb mux12 : process() is
+ 
+ end process mux12;
+ 
+  comb mux13 : process() is
+ 
+ end process mux13;
+ 
+  comb mux21 : process() is
+ 
+ end process mux21;
+ 
+  comb mux31 : process() is
+ 
+ end process mux31;
+ 
+  comb mux41 : process() is
+ 
+ end process mux41;
+ 
+  comb mux51 : process() is
+ 
+ end process mux51;
+ 
+  comb mux61 : process() is
+ 
+ end process mux61;
+ 
+  comb mux71 : process() is
+ 
+ end process mux71;
+ 
+ -- breaker
+ 
+ comb breakSig1 : process() is
+ 
+ end process breakSig1;
+ 
+  comb breakSig2 : process() is
+ 
+ end process breakSig2;
+ 
+  comb breakSig3 : process() is
+ 
+ end process breakSig3;
+ 
+ -- end ADDED process
+ 
+ -- componenent mapping
+ 
+ TagArray_1 : TagArray
     port map (
       clk            => clk,
       rst            => rst,

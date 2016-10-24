@@ -120,4 +120,4 @@ architecture tsb of BusTriStateBufferForBusController is
 
 begin
     busData <= busDataIn when (busOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
-end tsb;
+end architecture sb;

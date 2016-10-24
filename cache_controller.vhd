@@ -47,12 +47,24 @@ architecture rtl of CacheController is
   -- we gotta implement the 3 components (tristatebuffer, cpureqreg and victumreg) : easy
   -- but we gotta link all that shit with all the muxes and breakers like on the datapath
   -- each input or ouput (in the port list above) is grey on the PDF datapath
-  -- we probably have to create an internal signal for each of the input/output of our intern component, 
+  -- we probably have to create an internal signal for each of the input/output of 
+  --  our intern component, 
   -- like they did for DataArray and TagArray
   -- then we map then to the components
-  -- but how can we link all the mutliplixers and stuff ? if we have to declare an internal signal for each output/in of them, this is a shit ton
+  -- but how can we link all the mutliplixers and stuff ? if we have to declare an 
+  --  internal signal for each output/in of them, this is a shit ton
 
-  --also, the write state machine is more or less coded, with intern signal (supposed to be linked to intern components), that doesn't exist yet.
+  --also, the write state machine is more or less coded, with intern signal 
+  --  (supposed to be linked to intern components), that doesn't exist yet.
+  
+  
+  --------------------------- REMINDER ------------------------
+  -- create the missing signals
+  -- map this signal to the component created after TagArray_1 and DataArray_1
+  -- implement architecture of CpuReqReg, RdDataTriStateBuffer, VictimReg
+  -- implement the state machine
+  
+  
 begin  -- architecture rtl
 
   comb_proc : process () is
@@ -165,6 +177,47 @@ begin  -- architecture rtl
       dataArrayAddr     => dataArrayAddr,
       dataArrayWrData   => dataArrayWrData,
       dataArrayRdData   => dataArrayRdData);
+	  
+  -- begin ADDED component
+  BusTriStateBufferForCacheController_1 : BusTriStateBufferForCacheController
+    port map (
+      busOutEn		=> busOutEn,
+	  busCmdIn		=> ,-- TODO
+      busDataIn		=> ,-- TODO
+	  busAddrIn 	=> ,-- TODO
+	  busCmd 		=> busCmd,
+      busData		=> busData,
+	  busAddr		=> busAddr);
+	  
+  VictimReg_1 : VictimReg
+	port map (
+	 victimRegWrEn		=> ,--TODO
+	 victimRegSetIn		=> tagVictimSet,
+	 victimRegDirtyIn	=> tagVictimDirty,
+	 victimRegAddrIn	=> tagVictimAddr,
+	 victimRegDataIn	=> ,--TODO
+	 victimRegSet		=> ,--TODO
+	 victimRegDirty		=> ,--TODO
+	 victimRegAddr		=> ,--TODO
+	 victimRegData		=>  );--TODO
+	
+  CpuReqReg_1 : CpuReqReg
+	port map (
+	 cpuReqRegWrEn		=> ,--TODO
+	 cpuReqRegAddrIn	=> cacheAddr,
+	 cpuReqRegDataIn	=> cacheWrData,
+	 cpuReqRegAddr		=> ,--TODO
+	 cpuReqRegWord		=> ,--TODO
+	 cpuReqRegData		=> ,--TODO
+	);
+
+  RdDataTriStateBuffer_1 : RdDataTriStateBuffer
+	port map (
+	 cacheRdOutEn		=> ,--TODO
+	 cacheRdDataIn		=> ,--TODO
+	 cacheRdData		=> cacheRdData);
+	  
+  -- end ADDED component
 
   clk_proc : process (clk, rst) is
   begin  -- process clk_proc
@@ -177,3 +230,106 @@ begin  -- architecture rtl
   end process clk_proc;
 
 end architecture rtl;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.mem_types.all;
+use work.mem_components.all;
+
+entity BusTriStateBufferForCacheController is
+
+  port (
+    busOutEn  : in  std_logic;
+    busCmdIn  : in  bus_cmd_t;
+    busDataIn : in  data_block_t;
+	busAddrIn : in  std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	busCmd 	  : out bus_cmd_t;
+	busData   : out data_block_t;
+	busAddr   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0)
+	);
+
+end entity BusTriStateBufferForCacheController;
+
+architecture tsb of BusTriStateBufferForCacheController is
+
+begin
+    busData		<= busDataIn when (busOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
+	busCmd  	<= busCmdIn  when (busOutEn = '1') else BUS_READ;
+    busAddrIn	<= busAddr when (busOutEn = '1') else (others => 'Z');
+end tsb;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.mem_types.all;
+use work.mem_components.all;
+
+entity CpuReqReg is
+
+  port (
+	cpuReqRegWrEn	:	in std_logic;
+	cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	cpuReqRegDataIn	:	in data_word_t;
+	cpuReqRegAddr	:	out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	cpuReqRegWord	:	out std_logic;
+	cpuReqRegData	: 	out data_word_t);
+
+end entity CpuReqReg;
+
+architecture crr of CpuReqReg is
+
+begin
+-- TODO
+
+end crr;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.mem_types.all;
+use work.mem_components.all;
+
+entity VictimReg is
+
+  port (
+	victimRegWrEn	: in std_logic;
+	victimRegSetIn	: in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegDirtyIn: in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegAddrIn	: in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	victimRegDataIn	: in data_word_t;
+	victimRegSet	: out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegDirty	: out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegAddr	: out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	victimRegData	: out data_word_t);
+
+end entity VictimReg;
+
+architecture vr of VictimReg is
+
+begin
+-- TODO
+
+end vr;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.mem_types.all;
+use work.mem_components.all;
+
+entity RdDataTriStateBuffer is
+
+  port (
+	cacheRdOutEn	: in std_logic;
+	cacheRdDataIn	: in data_block_t;
+	cacheRdData		: out data_block_t);
+
+end entity RdDataTriStateBuffer;
+
+architecture rdtsb of RdDataTriStateBuffer is
+
+begin
+-- TODO
+
+end rdtsb;

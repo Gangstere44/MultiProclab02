@@ -43,12 +43,21 @@ architecture rtl of CacheController is
 
   -- begin ADDED internal signal
   
-  -- evident signal on the graph
-  signal victimRegAddr	: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0); 	
-  signal victimRegData	: data_block_t;
+  signal busDataWord 			: data_word_t;
   
-  signal cpuRegReqWord	: std_logic;
+  signal tmpDataArrayRdData 	: data_word_t;
   
+  signal victimRegWrEn			: std_logic;
+  signal victimRegDataIn		: data_block_t;
+  signal victimRegSet			: std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+  signal victimRegDirty			: std_logic;
+  signal victimRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0); 	
+  signal victimRegData			: data_block_t;
+  
+  signal cpuRegReqWord			: std_logic;
+  signal cpuReqRegWrEn			: std_logic;
+  signal cpuReqRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0); 
+  signal cpuReqRegData			: data_block_t;
   
   -- end ADDED internal signal
 
@@ -90,6 +99,8 @@ begin  -- architecture rtl
     dataArrayWrWord <= '0';
     busOutEn <= '0';
     cacheRdOutEn <= '0';
+	
+	cacheRdDataIn <= tmpDataArrayRdData;
 
     -- output default values
     cacheDone <= '0';
@@ -163,6 +174,21 @@ begin  -- architecture rtl
 
   end process comb_proc;
 
+  
+  busDataWordPick : process(cpuRegReqWord, busData) is
+  begin
+	busDataWord <= busData(to_integer(unsigned(cpuRegReqWord)));
+  end process busDataWordPick;
+  
+  victimRegDataInPick : process(tagVictimSet, dataArrayRdData) is
+  begin
+	victimRegDataIn <= dataArrayRdData(to_integer(unsigned(tagVictimSet)));
+  end process victimRegDataInPick;
+  
+  dataArrayRdDataPick : process(tagHitSet, cpuRegReqWord, dataArrayRdData) is 
+  begin
+	tmpDataArrayRdData <= dataArrayAddr(to_integer(unsigned(tagHitSet)))(to_integer(unsigned(cpuRegReqWord)));
+  end process dataArrayRdDataPick;
 
  -- end ADDED process
  
@@ -206,30 +232,30 @@ begin  -- architecture rtl
 	  
   VictimReg_1 : VictimReg
 	port map (
-	 victimRegWrEn		=> ,--TODO
+	 victimRegWrEn		=> victimRegWrEn,
 	 victimRegSetIn		=> tagVictimSet,
 	 victimRegDirtyIn	=> tagVictimDirty,
 	 victimRegAddrIn	=> tagVictimAddr,
-	 victimRegDataIn	=> ,--TODO
-	 victimRegSet		=> ,--TODO
-	 victimRegDirty		=> ,--TODO
-	 victimRegAddr		=> ,--TODO
-	 victimRegData		=>  );--TODO
+	 victimRegDataIn	=> victimRegDataIn,
+	 victimRegSet		=> victimRegSet,
+	 victimRegDirty		=> victimRegDirty,
+	 victimRegAddr		=> victimRegAddr,
+	 victimRegData		=> victimRegData);
 	
   CpuReqReg_1 : CpuReqReg
 	port map (
-	 cpuReqRegWrEn		=> ,--TODO
+	 cpuReqRegWrEn		=> cpuReqRegEn,
 	 cpuReqRegAddrIn	=> cacheAddr,
 	 cpuReqRegDataIn	=> cacheWrData,
-	 cpuReqRegAddr		=> ,--TODO
-	 cpuReqRegWord		=> ,--TODO
-	 cpuReqRegData		=> ,--TODO
+	 cpuReqRegAddr		=> cpuReqRegAddr,
+	 cpuReqRegWord		=> cpuRegReqWord,
+	 cpuReqRegData		=> cpuReqRegData
 	);
 
   RdDataTriStateBuffer_1 : RdDataTriStateBuffer
 	port map (
-	 cacheRdOutEn		=> ,--TODO
-	 cacheRdDataIn		=> ,--TODO
+	 cacheRdOutEn		=> cacheRdOutEn,
+	 cacheRdDataIn		=> cacheRdDataIn,
 	 cacheRdData		=> cacheRdData);
 	  
 	  

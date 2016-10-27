@@ -26,7 +26,7 @@ architecture rtl of CacheController is
                               ST_RD_WAIT_BUS_COMPLETE_WB,
                               ST_WR_HIT_TEST, ST_WR_WAIT_BUS_GRANT, ST_WR_WAIT_BUS_COMPLETE);
 
-  signal cacheStNext, cacheSt                : cache_ctrl_state_t := ST_IDLE;
+  signal cacheStNext, cacheSt     : cache_ctrl_state_t := ST_IDLE;
 
 ---------------------------- Origin internal signals ---------------------------
 
@@ -45,21 +45,40 @@ architecture rtl of CacheController is
 
 ---------------------------- Custom internal signals ---------------------------
 
-  signal busDataWord 			: data_word_t;
+  -- The two signals out of the "made by hand" muxes
+  signal busDataWord 			  : data_word_t;
+  signal cacheRdDataInAux   : data_word_t;
 
-  signal tmpDataArrayRdData 	: data_word_t;
-
+  -- VictimReg input/output
   signal victimRegWrEn			: std_logic;
+  signal victimRegSetIn			: std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+  signal victimRegDirtyIn		: std_logic;
+  signal victimRegAddrIn		: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
   signal victimRegDataIn		: data_block_t;
+
   signal victimRegSet			  : std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
   signal victimRegDirty			: std_logic;
   signal victimRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
   signal victimRegData			: data_block_t;
 
-  signal cpuRegReqWord			: std_logic;
+  -- cpuRegReq input/output
   signal cpuReqRegWrEn			: std_logic;
+  signal cpuReqRegAddrIn		: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+  signal cpuReqRegDataIn		: data_block_t;
+
   signal cpuReqRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+  signal cpuRegReqWord			: std_logic;
   signal cpuReqRegData			: data_block_t;
+
+  -- BusTriStateBuffer input (no outputs because mapped to the cache outputs)
+  signal busOutEn           : std_logic;
+  signal busCmdIn           : bus_cmd_t;
+  signal busDataIn          : data_block_t;
+  signal busAddrIn          : std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+
+  -- RdDataTriStateBuffer input (no outputs because mapped to the cache outputs)
+  signal cacheRdOutEn       : std_logic;
+  signal cacheRdDataIn      : data_word_t;
 
 ---------------------------- State machine process -----------------------------
 
@@ -92,18 +111,85 @@ begin
           dataArrayAddr <= cacheAddr;
           tagAddr       <= cacheAddr;
           tagLookupEn   <= '1';
+        elsif (cacheCs = '1' and cacheRead = '1') then
+          cacheStNext   <= ST_RD_HIT_TEST;
+          cpuReqRegWrEn <= '1';
+          dataArrayAddr <= cacheAddr;
+          tagAddr       <= cacheAddr;
+          tagLookupEn   <= '1';
         end if;
 
       -----------------------------------------------------------------------
       -- Read state machine
       -----------------------------------------------------------------------
       when ST_RD_HIT_TEST =>
+        if (tagHitEn = '1') then
+          cacheStNext   <= ST_IDLE;
+          cacheDone     <= '1';
+          cacheRdOutEn  <= '1';
+          cacheRdData   <= dataArrayRdData(tagHitSet)(cpuRegReqWord) -- TODO
+        else
+          cacheStNext   <= ST_RD_WAIT_BUS_GRANT_ACC;
+          victimRegWrEn <= '1';
+        end if;
 
       when ST_RD_WAIT_BUS_GRANT_ACC =>
+        if (busGrant = '1') then
+          cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_ACC;
+          busReq      <= '1';
+          busOutEn    <= '1';
+          busCmd      <= BUS_READ;
+          busAddrIn   <= cpuReqRegAddr;
+        end if;
 
       when ST_RD_WAIT_BUS_COMPLETE_ACC =>
+        if (busGrant = '0' and victimRegDirty = '0') then
+          cacheStNext       <= ST_IDLE;
+          cacheDone         <= '1';
+          cacheRdOutEn      <= '1';
+          cacheRdData       <= busDataWord;
+          tagWrEn           <= '1';
+          tagWrSet          <= victimRegSet;
+          tagWrSetDirty     <= '0';
+          tagAddr           <= cpuReqRegAddr;
+          dataArrayWrEn     <= '1';
+          dataArrayWrSetIdx <= victimRegSet;
+          dataArrayWrWord   <= '0';
+          dataArrayWrData   <= busData;
+        elsif (busGrant = '0' and victimRegDirty = '1') then
+          cacheStNext       <= ST_RD_WAIT_BUS_GRANT_WB;
+          tagWrEn           <= '1';
+          tagWrSet          <= victimRegSet;
+          tagWrSetDirty     <= '0';
+          tagAddr           <= cpuReqRegAddr;
+          dataArrayWrEn     <= '1';
+          dataArrayWrSetIdx <= victimRegSet;
+          dataArrayWrWord   <= '0';
+          dataArrayWrData   <= busData;
+        end if;
 
       when ST_RD_WAIT_BUS_GRANT_WB =>
+        if (busGrant = '1') then
+          cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_WB;
+          busReq      <= '1';
+          busOutEn    <= '1';
+          busCmdIn    <= BUS_WRITE;
+          busAddrIn   <= victimRegAddr;
+          busDataIn   <= victimRegData;
+        else
+          busReq      <= '1';
+        end if;
+
+      when ST_RD_WAIT_BUS_COMPLETE_WB =>
+        if (busGrant = '1') then
+          dataArrayAddr <= cpuReqRegAddr;
+        else
+          cacheStNext   <= ST_IDLE;
+          cacheDone     <= '1';
+          cacheRdOutEn  <= '1';
+          cacheRdData   <= dataArrayRdData(tagHitSet)(cpuReqRegWord) -- TODO
+        end if;
+
 
       -----------------------------------------------------------------------
       -- Write state machine
@@ -179,9 +265,9 @@ begin
   BusTriStateBufferForCacheController_1 : BusTriStateBufferForCacheController
     port map (
       busOutEn		=> busOutEn,
-      busCmdIn		=> ,-- TODO
-      busDataIn		=> ,-- TODO
-	    busAddrIn 	=> ,-- TODO
+      busCmdIn		=> busCmdIn,
+      busDataIn		=> busDataIn,
+	    busAddrIn 	=> busAddrIn,
 	    busCmd 		  => busCmd,
       busData		  => busData,
 	    busAddr		  => busAddr);
@@ -190,8 +276,8 @@ begin
 	port map (
 	 victimRegWrEn		=> victimRegWrEn,
 	 victimRegSetIn		=> tagVictimSet,
-	 victimRegDirtyIn	=> tagVictimDirty,
-	 victimRegAddrIn	=> tagVictimAddr,
+	 victimRegDirtyIn	=> tagVictimDirtyIn,
+	 victimRegAddrIn	=> tagVictimAddrIn,
 	 victimRegDataIn	=> victimRegDataIn,
 	 victimRegSet		  => victimRegSet,
 	 victimRegDirty		=> victimRegDirty,
@@ -242,10 +328,10 @@ entity BusTriStateBufferForCacheController is
     busOutEn  : in  std_logic;
     busCmdIn  : in  bus_cmd_t;
     busDataIn : in  data_block_t;
-	busAddrIn : in  std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	busCmd 	  : out bus_cmd_t;
-	busData   : out data_block_t;
-	busAddr   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0)
+	  busAddrIn : in  std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  busCmd 	  : out bus_cmd_t;
+	  busData   : out data_block_t;
+	  busAddr   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0)
 	);
 
 end entity BusTriStateBufferForCacheController;

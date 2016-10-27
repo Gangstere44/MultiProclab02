@@ -28,6 +28,8 @@ architecture rtl of CacheController is
 
   signal cacheStNext, cacheSt                : cache_ctrl_state_t := ST_IDLE;
 
+---------------------------- Origin internal signals ---------------------------
+
   signal tagLookupEn, tagWrEn, tagWrSetDirty : std_logic;
   signal tagWrSet                            : std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
   signal tagAddr                             : std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
@@ -41,86 +43,59 @@ architecture rtl of CacheController is
   signal dataArrayWrData                : data_block_t;
   signal dataArrayRdData                : data_set_t;
 
-  -- begin ADDED internal signal
-  
+---------------------------- Custom internal signals ---------------------------
+
   signal busDataWord 			: data_word_t;
-  
+
   signal tmpDataArrayRdData 	: data_word_t;
-  
+
   signal victimRegWrEn			: std_logic;
   signal victimRegDataIn		: data_block_t;
-  signal victimRegSet			: std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+  signal victimRegSet			  : std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
   signal victimRegDirty			: std_logic;
-  signal victimRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0); 	
+  signal victimRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
   signal victimRegData			: data_block_t;
-  
+
   signal cpuRegReqWord			: std_logic;
   signal cpuReqRegWrEn			: std_logic;
-  signal cpuReqRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0); 
+  signal cpuReqRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
   signal cpuReqRegData			: data_block_t;
-  
-  -- end ADDED internal signal
 
-  -------------------------- README BITCH --------------------------
-  -- a bit more tricky than for bus controller 
-  -- we gotta implement the 3 components (tristatebuffer, cpureqreg and victumreg) : easy
-  -- but we gotta link all that shit with all the muxes and breakers like on the datapath
-  -- each input or ouput (in the port list above) is grey on the PDF datapath
-  -- we probably have to create an internal signal for each of the input/output of 
-  --  our intern component, 
-  -- like they did for DataArray and TagArray
-  -- then we map then to the components
-  -- but how can we link all the mutliplixers and stuff ? if we have to declare an 
-  --  internal signal for each output/in of them, this is a shit ton
+---------------------------- State machine process -----------------------------
 
-  --also, the write state machine is more or less coded, with intern signal 
-  --  (supposed to be linked to intern components), that doesn't exist yet.
-  
-  
-  --------------------------- REMINDER ------------------------
-  -- create the missing signals
-  -- map this signal to the component created after TagArray_1 and DataArray_1
-  -- implement architecture of CpuReqReg, RdDataTriStateBuffer, VictimReg
-  -- implement the state machine
-  
-  
-begin  -- architecture rtl
+begin
 
   comb_proc : process () is
-  begin  -- process comb_proc
-    -- internal flags default values
-    cacheStNext <= cacheSt;
-    cpuReqRegWrEn <= '0';
-    victimRegWrEn <= '0';
-    tagLookupEn <= '0';
-    tagWrEn <= '0';
-    tagWrSetDirty <= '0';
-    dataArrayWrEn <= '0';
+  begin
+    -- Internal flags default values
+    cacheStNext     <= cacheSt;
+    cpuReqRegWrEn   <= '0';
+    victimRegWrEn   <= '0';
+    tagLookupEn     <= '0';
+    tagWrEn         <= '0';
+    tagWrSetDirty   <= '0';
+    dataArrayWrEn   <= '0';
     dataArrayWrWord <= '0';
-    busOutEn <= '0';
-    cacheRdOutEn <= '0';
-	
-	cacheRdDataIn <= tmpDataArrayRdData;
+    busOutEn        <= '0';
+    cacheRdOutEn    <= '0';
 
-    -- output default values
-    cacheDone <= '0';
-    busReq <= '0';
+    -- Output default values
+    cacheDone       <= '0';
+    busReq          <= '0';
 
-    -- signals with dont care initialization
 
-    -- control: state machine
     case cacheSt is
       when ST_IDLE =>
         if (cacheCs = '1' and cacheWrite = '1') then
-          cacheStNext <= ST_WR_HIT_TEST;
+          cacheStNext   <= ST_WR_HIT_TEST;
           cpuReqRegWrEn <= '1';
           dataArrayAddr <= cacheAddr;
-          tagAddr <= cacheAddr;
-          tagLookupEn <= '1';
+          tagAddr       <= cacheAddr;
+          tagLookupEn   <= '1';
         end if;
 
       -----------------------------------------------------------------------
-      -- rd state machine
+      -- Read state machine
       -----------------------------------------------------------------------
       when ST_RD_HIT_TEST =>
 
@@ -131,40 +106,40 @@ begin  -- architecture rtl
       when ST_RD_WAIT_BUS_GRANT_WB =>
 
       -----------------------------------------------------------------------
-      -- wr state machine
+      -- Write state machine
       -----------------------------------------------------------------------
       when ST_WR_HIT_TEST =>
-        if (tagHitEn = '1') then 
-          cacheStNext <= ST_IDLE;
-          cacheDone <= '1';
-          tagWrEn <= '1';
-          tagWrSet <= tagHitSet;
-          tagWrSetDirty <= '1';
-          tagAddr <= cpuReqRegAddr;
-          dataArrayWrEn <= '1';
-          dataArrayWrWord <= '1';
+        if (tagHitEn = '1') then
+          cacheStNext       <= ST_IDLE;
+          cacheDone         <= '1';
+          tagWrEn           <= '1';
+          tagWrSet          <= tagHitSet;
+          tagWrSetDirty     <= '1';
+          tagAddr           <= cpuReqRegAddr;
+          dataArrayWrEn     <= '1';
+          dataArrayWrWord   <= '1';
           dataArrayWrSetIdx <= tagHitSet;
-          dataArrayWrData <= cpuReqRegData;
-        else 
+          dataArrayWrData   <= cpuReqRegData;
+        else
           cacheStNext <= ST_WR_WAIT_BUS_GRANT;
         end if;
 
       when ST_WR_WAIT_BUS_GRANT =>
         if (busGrant = '1') then
           cacheStNext <= ST_WR_WAIT_BUS_COMPLETE;
-          busReq <= '1';
-          busOutEn <= '1';
-          busCmd <= BUS_WRITE_WORD;
-          busAddrIn <= cpuReqRegAddr;
-          busDataIn <= cpuReqRegData;
+          busReq      <= '1';
+          busOutEn    <= '1';
+          busCmd      <= BUS_WRITE_WORD;
+          busAddrIn   <= cpuReqRegAddr;
+          busDataIn   <= cpuReqRegData;
         else
-          busReq <= '1';
+          busReq      <= '1';
         end if;
 
       when ST_WR_WAIT_BUS_COMPLETE =>
         if (busGrant = '0') then
           cacheStNext <= ST_IDLE;
-          cacheDone <= '1';
+          cacheDone   <= '1';
         end if;
 
       when others => null;
@@ -174,26 +149,8 @@ begin  -- architecture rtl
 
   end process comb_proc;
 
-  
-  busDataWordPick : process(cpuRegReqWord, busData) is
-  begin
-	busDataWord <= busData(to_integer(unsigned(cpuRegReqWord)));
-  end process busDataWordPick;
-  
-  victimRegDataInPick : process(tagVictimSet, dataArrayRdData) is
-  begin
-	victimRegDataIn <= dataArrayRdData(to_integer(unsigned(tagVictimSet)));
-  end process victimRegDataInPick;
-  
-  dataArrayRdDataPick : process(tagHitSet, cpuRegReqWord, dataArrayRdData) is 
-  begin
-	tmpDataArrayRdData <= dataArrayAddr(to_integer(unsigned(tagHitSet)))(to_integer(unsigned(cpuRegReqWord)));
-  end process dataArrayRdDataPick;
+----------------------------- Componenents mapping -----------------------------
 
- -- end ADDED process
- 
- -- componenent mapping
- 
  TagArray_1 : TagArray
     port map (
       clk            => clk,
@@ -218,18 +175,17 @@ begin  -- architecture rtl
       dataArrayAddr     => dataArrayAddr,
       dataArrayWrData   => dataArrayWrData,
       dataArrayRdData   => dataArrayRdData);
-	  
-  -- begin ADDED component
+
   BusTriStateBufferForCacheController_1 : BusTriStateBufferForCacheController
     port map (
       busOutEn		=> busOutEn,
-	  busCmdIn		=> ,-- TODO
+      busCmdIn		=> ,-- TODO
       busDataIn		=> ,-- TODO
-	  busAddrIn 	=> ,-- TODO
-	  busCmd 		=> busCmd,
-      busData		=> busData,
-	  busAddr		=> busAddr);
-	  
+	    busAddrIn 	=> ,-- TODO
+	    busCmd 		  => busCmd,
+      busData		  => busData,
+	    busAddr		  => busAddr);
+
   VictimReg_1 : VictimReg
 	port map (
 	 victimRegWrEn		=> victimRegWrEn,
@@ -237,11 +193,11 @@ begin  -- architecture rtl
 	 victimRegDirtyIn	=> tagVictimDirty,
 	 victimRegAddrIn	=> tagVictimAddr,
 	 victimRegDataIn	=> victimRegDataIn,
-	 victimRegSet		=> victimRegSet,
+	 victimRegSet		  => victimRegSet,
 	 victimRegDirty		=> victimRegDirty,
 	 victimRegAddr		=> victimRegAddr,
 	 victimRegData		=> victimRegData);
-	
+
   CpuReqReg_1 : CpuReqReg
 	port map (
 	 cpuReqRegWrEn		=> cpuReqRegEn,
@@ -255,12 +211,10 @@ begin  -- architecture rtl
   RdDataTriStateBuffer_1 : RdDataTriStateBuffer
 	port map (
 	 cacheRdOutEn		=> cacheRdOutEn,
-	 cacheRdDataIn		=> cacheRdDataIn,
+	 cacheRdDataIn	=> cacheRdDataIn,
 	 cacheRdData		=> cacheRdData);
-	  
-	  
-	  
-  -- end ADDED component
+
+-------------------------------- Clock process ---------------------------------
 
   clk_proc : process (clk, rst) is
   begin  -- process clk_proc
@@ -268,12 +222,13 @@ begin  -- architecture rtl
       cacheSt <= ST_IDLE;
     elsif clk'event and clk = '1' then  -- rising clock edge
       cacheSt <= cacheStNext;
-
+    end if;
       -- there should be more stuff here
-  end process clk_proc;
+  end process;
 
-end architecture rtl;
+end architecture;
 
+--------------------- BusTriStateBufferForCacheController ----------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -303,6 +258,8 @@ begin
   busAddrIn	<= busAddr when (busOutEn = '1') else (others => 'Z');
 end architecture tsb;
 
+----------------------------------- CpuReqReg ----------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -312,6 +269,8 @@ use work.mem_components.all;
 entity CpuReqReg is
 
   port (
+  clk : in std_logic;
+  rst : in std_logic;
 	cpuReqRegWrEn	:	in std_logic;
 	cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
 	cpuReqRegDataIn	:	in data_word_t;
@@ -324,13 +283,25 @@ end entity CpuReqReg;
 architecture crr of CpuReqReg is
 
 begin
-  if (cpuReqRegWrEn = '1') then 
-    cpuReqRegAddr <= cpuReqRegAddrIn;
-    cpuReqRegData <= cpuReqRegDataIn;
-    cpuReqRegWord <= cpuReqRegDataIn(getBlockIdx(cpuReqRegAddrIn));
-  end if;
 
-end architecture crr;
+  process(clk, rst)
+  begin
+    if (rst = '1') then
+      cpuReqRegAddr <= (others => 0);
+      cpuReqRegData <= (others => 0);
+      cpuReqRegWord <= (others => 0);
+    elsif rising_edge(clk) then
+      if (cpuReqRegWrEn = '1') then
+        cpuReqRegAddr <= cpuReqRegAddrIn;
+        cpuReqRegData <= cpuReqRegDataIn;
+        cpuReqRegWord <= cpuReqRegDataIn(getBlockIdx(cpuReqRegAddrIn));
+      end if;
+    end if;
+  end process;
+
+end architecture;
+
+----------------------------------- VictimReg ----------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -341,31 +312,44 @@ use work.mem_components.all;
 entity VictimReg is
 
   port (
-	victimRegWrEn	: in std_logic;
-	victimRegSetIn	: in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegDirtyIn: in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegAddrIn	: in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	victimRegDataIn	: in data_word_t;
-	victimRegSet	: out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegDirty	: out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegAddr	: out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	victimRegData	: out data_word_t);
+  clk              : in std_logic;
+  rst              : in std_logic;
+	victimRegWrEn	   : in std_logic;
+	victimRegSetIn	 : in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegDirtyIn : in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegAddrIn	 : in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	victimRegDataIn	 : in data_word_t;
+	victimRegSet	   : out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegDirty	 : out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	victimRegAddr	   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	victimRegData	   : out data_word_t);
 
 end entity VictimReg;
 
 architecture vr of VictimReg is
 
 begin
-  if (victimRegWrEn = '1') then 
-    victimRegSet <= victimRegSetIn;
-    victimRegDirty <= victimRegDirtyIn;
-    victimRegAddr <= victimRegAddrIn;
-    victimRegData <= victimRegDataIn;
-  end if;
 
-end architecture vr;
+  process(clk, rst)
+  begin
+    if (rst = '1') then
+      victimRegSet    <= (others => '0');
+      victimRegDirty  <= (others => '0');
+      victimRegAddr   <= (others => '0');
+      victimRegData   <= (others => '0');
+    elsif rising_edge(clk) then
+      if (victimRegWrEn = '1') then
+        victimRegSet    <= victimRegSetIn;
+        victimRegDirty  <= victimRegDirtyIn;
+        victimRegAddr   <= victimRegAddrIn;
+        victimRegData   <= victimRegDataIn;
+      end if;
+    end if;
+  end process;
 
+end architecture;
 
+----------------------------- RdDataTriStateBuffer -----------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -387,4 +371,3 @@ architecture rdtsb of RdDataTriStateBuffer is
 begin
   cacheRdData   <= cacheRdDataIn when (cacheRdOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
 end architecture rdtsb;
-

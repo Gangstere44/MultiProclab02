@@ -147,7 +147,7 @@ begin
           cacheStNext       <= ST_IDLE;
           cacheDone         <= '1';
           cacheRdOutEn      <= '1';
-          cacheRdData       <= busDataWord;
+          cacheRdDataIn     <= busDataWord; -- HERE is the other part of the mux for RdDataTriStateBuffer
           tagWrEn           <= '1';
           tagWrSet          <= victimRegSet;
           tagWrSetDirty     <= '0';
@@ -187,7 +187,7 @@ begin
           cacheStNext   <= ST_IDLE;
           cacheDone     <= '1';
           cacheRdOutEn  <= '1';
-          cacheRdData   <= dataArrayRdData(tagHitSet)(cpuReqRegWord) -- TODO
+          cacheRdDataIn   <= dataArrayRdData(tagHitSet)(cpuReqRegWord) --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
         end if;
 
 
@@ -231,11 +231,20 @@ begin
       when others => null;
     end case;
 
-    -- datapath:
-
   end process comb_proc;
 
------------------------------ Componenents mapping -----------------------------
+---------------------------- busDataWord mux process ---------------------------
+
+  process (cpuReqRegWord, busData) is
+  begin
+    if (cpuRegReqWord = '0') then
+      busDataWord <= busData(0);
+    else
+      busDataWord <= busData(1);
+    end if;
+  end process;
+
+------------ Componenents mapping -----------------------------
 
  TagArray_1 : TagArray
     port map (

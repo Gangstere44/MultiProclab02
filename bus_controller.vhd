@@ -41,7 +41,7 @@ architecture rtl of BusController is
   
 begin  -- architecture rtl
 
-  comb_proc : process (arbiterReqValid, memDone) is
+  comb_proc : process (busSt, arbiterReqValid, memDone) is
   begin  -- process comb_proc
     -- internal signals default values
     busStNext <= busSt;

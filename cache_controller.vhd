@@ -192,7 +192,7 @@ begin
           cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_ACC;
           busReq      <= '1';
           busOutEn    <= '1';
-          busCmd      <= BUS_READ;
+          busCmdIn      <= BUS_READ;
           busAddrIn   <= cpuReqRegAddr;
 		else
 		  busReq	  <= '1';
@@ -275,7 +275,7 @@ begin
           cacheStNext <= ST_WR_WAIT_BUS_COMPLETE;
           busReq      <= '1';
           busOutEn    <= '1';
-          busCmd      <= BUS_WRITE_WORD;
+          busCmdIn      <= BUS_WRITE_WORD;
           busAddrIn   <= cpuReqRegAddr;
           busDataIn   <= cpuReqRegData;
         else

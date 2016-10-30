@@ -32,6 +32,13 @@ architecture rtl of BusController is
   -- Intern signal used to control the tri state buffer
   signal busOutEn         : std_logic;
   
+  component BusTriStateBufferForBusController is
+    port (
+    busOutEn  : in  std_logic;
+    busDataIn : in  data_block_t;
+    busData   : out data_block_t);
+  end component BusTriStateBufferForBusController;
+  
 begin  -- architecture rtl
 
   comb_proc : process (arbiterReqValid, memDone) is
@@ -42,7 +49,7 @@ begin  -- architecture rtl
     busOutEn <= '0';
 
     -- outputs default values
-    busGrant <= '0';
+    busGrant <=  (others => '0');
     memCs <= '0';
 
     -- signal with dont care initialization here
@@ -120,4 +127,4 @@ architecture tsb of BusTriStateBufferForBusController is
 
 begin
     busData <= busDataIn when (busOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
-end architecture sb;
+end architecture tsb;

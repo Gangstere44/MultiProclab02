@@ -67,7 +67,7 @@ architecture rtl of CacheController is
   signal cpuReqRegDataIn		: data_block_t;
 
   signal cpuReqRegAddr			: std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-  signal cpuRegReqWord			: std_logic;
+  signal cpuReqRegWord			: std_logic;
   signal cpuReqRegData			: data_block_t;
 
   -- BusTriStateBuffer input (no outputs because mapped to the cache outputs)
@@ -102,7 +102,7 @@ architecture rtl of CacheController is
 	cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
 	cpuReqRegDataIn	:	in data_word_t;
 	cpuReqRegAddr	:	out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	cpuRegReqWord	:	out std_logic;
+	cpuReqRegWord	:	out std_logic;
 	cpuReqRegData	: 	out data_block_t);
   end component CpuReqReg;
   
@@ -155,6 +155,7 @@ begin
 
     case cacheSt is
       when ST_IDLE =>
+        report "State IDLE";
         if (cacheCs = '1' and cacheWrite = '1') then
           cacheStNext   <= ST_WR_HIT_TEST;
           cpuReqRegWrEn <= '1';
@@ -177,7 +178,7 @@ begin
           cacheStNext   <= ST_IDLE;
           cacheDone     <= '1';
           cacheRdOutEn  <= '1';
-		  if (cpuRegReqWord = '0') then
+		  if (cpuReqRegWord = '0') then
 			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
 		  else
 			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
@@ -243,7 +244,7 @@ begin
           cacheStNext   <= ST_IDLE;
           cacheDone     <= '1';
           cacheRdOutEn  <= '1';
-		  if (cpuRegReqWord = '0') then
+		  if (cpuReqRegWord = '0') then
 			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
 		  else
 			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
@@ -295,9 +296,9 @@ begin
 
 ---------------------------- busDataWord mux process ---------------------------
 
-  process (cpuRegReqWord, busData) is
+  process (cpuReqRegWord, busData) is
   begin
-    if (cpuRegReqWord = '0') then
+    if (cpuReqRegWord = '0') then
       busDataWord <= busData(0);
     else
       busDataWord <= busData(1);
@@ -363,7 +364,7 @@ begin
 	 cpuReqRegAddrIn	=> cacheAddr,
 	 cpuReqRegDataIn	=> cacheWrData,
 	 cpuReqRegAddr		=> cpuReqRegAddr,
-	 cpuRegReqWord		=> cpuRegReqWord,
+	 cpuReqRegWord		=> cpuReqRegWord,
 	 cpuReqRegData		=> cpuReqRegData
 	);
 
@@ -434,7 +435,7 @@ entity CpuReqReg is
 	cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
 	cpuReqRegDataIn	:	in data_word_t;
 	cpuReqRegAddr	:	out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	cpuRegReqWord	:	out std_logic;
+	cpuReqRegWord	:	out std_logic;
 	cpuReqRegData	: 	out data_block_t);
 
 end entity CpuReqReg;
@@ -450,16 +451,16 @@ begin
   
 	tmpBlock <= DATA_BLOCK_HIGH_IMPEDANCE;
   
-    if (rst = '1') then
+    if (rst = '0') then
       cpuReqRegAddr <= (others => '0');
       cpuReqRegData <= DATA_BLOCK_HIGH_IMPEDANCE;
-      cpuRegReqWord <=  '0';
-    elsif rising_edge(clk) then
+      cpuReqRegWord <=  '0';
+    elsif clk'event and clk = '1' then
       if (cpuReqRegWrEn = '1') then
         cpuReqRegAddr <= cpuReqRegAddrIn;
-		tmpBlock(0)   <= cpuReqRegDataIn;
+		    tmpBlock(0)   <= cpuReqRegDataIn;
         cpuReqRegData <= tmpBlock;
-        cpuRegReqWord <= cpuReqRegDataIn(getBlockIdx(cpuReqRegAddrIn));
+        cpuReqRegWord <= cpuReqRegDataIn(getBlockIdx(cpuReqRegAddrIn));
       end if;
     end if;
   end process;
@@ -497,12 +498,12 @@ begin
 
   process(clk, rst)
   begin
-    if (rst = '1') then
+    if (rst = '0') then
       victimRegSet    <= (others => '0');
       victimRegDirty  <= '0';
       victimRegAddr   <= (others => '0');
       victimRegData   <= DATA_BLOCK_HIGH_IMPEDANCE;
-    elsif rising_edge(clk) then
+    elsif clk'event and clk = '1' then
       if (victimRegWrEn = '1') then
         victimRegSet    <= victimRegSetIn;
         victimRegDirty  <= victimRegDirtyIn;

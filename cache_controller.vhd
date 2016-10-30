@@ -134,7 +134,7 @@ architecture rtl of CacheController is
 
 begin
 
-  comb_proc : process (cacheCs, cacheWrite, tagHitEn, busGrant, victimRegDirty) is
+  comb_proc : process (cacheSt, cacheCs, cacheWrite, tagHitEn, busGrant, victimRegDirty) is
   begin
     -- Internal flags default values
     cacheStNext     <= cacheSt;

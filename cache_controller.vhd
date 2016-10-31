@@ -178,11 +178,11 @@ begin
           cacheStNext   <= ST_IDLE;
           cacheDone     <= '1';
           cacheRdOutEn  <= '1';
-		  if (cpuReqRegWord = '0') then
-			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
-		  else
-			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
-		  end if;
+		      if (cpuReqRegWord = '0') then
+			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+		      else
+			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+		      end if;
         else
           cacheStNext   <= ST_RD_WAIT_BUS_GRANT_ACC;
           victimRegWrEn <= '1';
@@ -244,11 +244,11 @@ begin
           cacheStNext   <= ST_IDLE;
           cacheDone     <= '1';
           cacheRdOutEn  <= '1';
-		  if (cpuReqRegWord = '0') then
-			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
-		  else
-			cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
-		  end if;
+		      if (cpuReqRegWord = '0') then
+			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+		      else
+			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+		      end if;
         end if;
 
 
@@ -460,7 +460,7 @@ begin
         cpuReqRegAddr <= cpuReqRegAddrIn;
 		    tmpBlock(0)   <= cpuReqRegDataIn;
         cpuReqRegData <= tmpBlock;
-        cpuReqRegWord <= cpuReqRegDataIn(getBlockIdx(cpuReqRegAddrIn));
+        cpuReqRegWord <= cpuReqRegAddrIn(0);
       end if;
     end if;
   end process;

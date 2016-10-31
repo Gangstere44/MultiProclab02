@@ -174,6 +174,7 @@ begin
       -- Read state machine
       -----------------------------------------------------------------------
       when ST_RD_HIT_TEST =>
+        report "State rd hit test";
         if (tagHitEn = '1') then
           cacheStNext   <= ST_IDLE;
           cacheDone     <= '1';
@@ -189,6 +190,7 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_GRANT_ACC =>
+      report "state rd wait bus grant acc";
         if (busGrant = '1') then
           cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_ACC;
           busReq      <= '1';
@@ -200,6 +202,7 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_COMPLETE_ACC =>
+      report "state rd waut bus complete acc";
         if (busGrant = '0' and victimRegDirty = '0') then
           cacheStNext       <= ST_IDLE;
           cacheDone         <= '1';
@@ -226,6 +229,7 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_GRANT_WB =>
+      report "state rd wait bus grant wb";
         if (busGrant = '1') then
           cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_WB;
           busReq      <= '1';
@@ -238,6 +242,7 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_COMPLETE_WB =>
+      report "state rd wait bus complete wb";
         if (busGrant = '1') then
           dataArrayAddr <= cpuReqRegAddr;
         else
@@ -256,6 +261,7 @@ begin
       -- Write state machine
       -----------------------------------------------------------------------
       when ST_WR_HIT_TEST =>
+      report "state wr hit test";
         if (tagHitEn = '1') then
           cacheStNext       <= ST_IDLE;
           cacheDone         <= '1';
@@ -272,6 +278,7 @@ begin
         end if;
 
       when ST_WR_WAIT_BUS_GRANT =>
+      report "state wr wait bus grant";
         if (busGrant = '1') then
           cacheStNext <= ST_WR_WAIT_BUS_COMPLETE;
           busReq      <= '1';
@@ -279,11 +286,13 @@ begin
           busCmdIn      <= BUS_WRITE_WORD;
           busAddrIn   <= cpuReqRegAddr;
           busDataIn   <= cpuReqRegData;
+          report "hellooooo " & integer'image(to_integer(unsigned(flattenBlock(cpuReqRegData))));
         else
           busReq      <= '1';
         end if;
 
       when ST_WR_WAIT_BUS_COMPLETE =>
+      report "state wr wait bus complete";
         if (busGrant = '0') then
           cacheStNext <= ST_IDLE;
           cacheDone   <= '1';
@@ -442,15 +451,11 @@ end entity CpuReqReg;
 
 architecture crr of CpuReqReg is
 
-	signal tmpBlock : data_block_t;
-
 begin
 
   process(clk, rst)
   begin
-  
-	tmpBlock <= DATA_BLOCK_HIGH_IMPEDANCE;
-  
+    
     if (rst = '0') then
       cpuReqRegAddr <= (others => '0');
       cpuReqRegData <= DATA_BLOCK_HIGH_IMPEDANCE;
@@ -458,8 +463,8 @@ begin
     elsif clk'event and clk = '1' then
       if (cpuReqRegWrEn = '1') then
         cpuReqRegAddr <= cpuReqRegAddrIn;
-		    tmpBlock(0)   <= cpuReqRegDataIn;
-        cpuReqRegData <= tmpBlock;
+        cpuReqRegData(0) <= cpuReqRegDataIn;
+        cpuReqRegData(1) <= (others => '0');
         cpuReqRegWord <= cpuReqRegAddrIn(0);
       end if;
     end if;

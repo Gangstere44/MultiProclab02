@@ -37,11 +37,11 @@ architecture rtl of CacheController is
   signal tagHitSet, tagVictimSet             : std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
   signal tagVictimAddr                       : std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
 
-  signal dataArrayWrEn, dataArrayWrWord : std_logic;
-  signal dataArrayWrSetIdx              : std_logic_vector(WORD_OFFSET_WIDTH-1 downto 0);
-  signal dataArrayAddr                  : std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-  signal dataArrayWrData                : data_block_t;
-  signal dataArrayRdData                : data_set_t;
+  signal dataArrayWrEn, dataArrayWrWord      : std_logic;
+  signal dataArrayWrSetIdx                   : std_logic_vector(WORD_OFFSET_WIDTH-1 downto 0);
+  signal dataArrayAddr                       : std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+  signal dataArrayWrData                     : data_block_t;
+  signal dataArrayRdData                     : data_set_t;
 
 ---------------------------- Custom internal signals ---------------------------
 
@@ -80,56 +80,56 @@ architecture rtl of CacheController is
   signal cacheRdOutEn       : std_logic;
   signal cacheRdDataIn      : data_word_t;
 
-  ---------------------------- Components declaration -----------------------------
-  
+  --------------------------- Components declaration ---------------------------
+
   component BusTriStateBufferForCacheController is
   port (
     busOutEn  : in  std_logic;
     busCmdIn  : in  bus_cmd_t;
     busDataIn : in  data_block_t;
-	busAddrIn : in  std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	busCmd 	  : out bus_cmd_t;
-	busData   : out data_block_t;
-	busAddr   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0)
+	  busAddrIn : in  std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  busCmd 	  : out bus_cmd_t;
+	  busData   : out data_block_t;
+	  busAddr   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0)
 	);
   end component BusTriStateBufferForCacheController;
-  
+
   component CpuReqReg is
   port (
-    clk				:   in std_logic;
-    rst			    :   in std_logic;
-	cpuReqRegWrEn	:	in std_logic;
-	cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	cpuReqRegDataIn	:	in data_word_t;
-	cpuReqRegAddr	:	out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	cpuReqRegWord	:	out std_logic;
-	cpuReqRegData	: 	out data_block_t);
+    clk				      : in std_logic;
+    rst			        : in std_logic;
+	  cpuReqRegWrEn	  :	in std_logic;
+	  cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  cpuReqRegDataIn	:	in data_word_t;
+	  cpuReqRegAddr	  :	out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  cpuReqRegWord	  :	out std_logic;
+	  cpuReqRegData	  : out data_block_t);
   end component CpuReqReg;
-  
+
   component VictimReg is
   port (
-  clk              : in std_logic;
-  rst              : in std_logic;
-	victimRegWrEn	   : in std_logic;
-	victimRegSetIn	 : in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegDirtyIn : in std_logic;
-	victimRegAddrIn	 : in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	victimRegDataIn	 : in data_block_t;
-	victimRegSet	   : out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegDirty	 : out std_logic;
-	victimRegAddr	   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	victimRegData	   : out data_block_t);
+    clk              : in std_logic;
+    rst              : in std_logic;
+	  victimRegWrEn	   : in std_logic;
+	  victimRegSetIn	 : in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	  victimRegDirtyIn : in std_logic;
+	  victimRegAddrIn	 : in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  victimRegDataIn	 : in data_block_t;
+	  victimRegSet	   : out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	  victimRegDirty	 : out std_logic;
+	  victimRegAddr	   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  victimRegData	   : out data_block_t);
   end component VictimReg;
 
   component RdDataTriStateBuffer is
   port (
-	cacheRdOutEn	: in std_logic;
-	cacheRdDataIn	: in data_word_t;
-	cacheRdData		: out data_word_t);
+	  cacheRdOutEn	: in std_logic;
+	  cacheRdDataIn	: in data_word_t;
+	  cacheRdData		: out data_word_t);
   end component RdDataTriStateBuffer;
 
-  
-  
+
+
 ---------------------------- State machine process -----------------------------
 
 begin
@@ -178,9 +178,9 @@ begin
           cacheDone     <= '1';
           cacheRdOutEn  <= '1';
 		      if (cpuReqRegWord = '0') then
-			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+			       cacheRdDataIn <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0);
 		      else
-			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+			       cacheRdDataIn <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1);
 		      end if;
         else
           cacheStNext   <= ST_RD_WAIT_BUS_GRANT_ACC;
@@ -192,10 +192,10 @@ begin
           cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_ACC;
           busReq      <= '1';
           busOutEn    <= '1';
-          busCmdIn      <= BUS_READ;
+          busCmdIn    <= BUS_READ;
           busAddrIn   <= cpuReqRegAddr;
-		else
-		  busReq	  <= '1';
+		    else
+		      busReq	    <= '1';
         end if;
 
       when ST_RD_WAIT_BUS_COMPLETE_ACC =>
@@ -244,9 +244,9 @@ begin
           cacheDone     <= '1';
           cacheRdOutEn  <= '1';
 		      if (cpuReqRegWord = '0') then
-			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(0);
 		      else
-			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1); --HERE is one part of the "made by hand mux for RdDataTriStateBuffer"
+			       cacheRdDataIn   <= dataArrayRdData(to_integer(unsigned(tagHitSet)))(1);
 		      end if;
         end if;
 
@@ -268,7 +268,7 @@ begin
           dataArrayWrSetIdx <= tagHitSet;
           dataArrayWrData   <= cpuReqRegData;
         else
-          cacheStNext <= ST_WR_WAIT_BUS_GRANT;
+          cacheStNext       <= ST_WR_WAIT_BUS_GRANT;
         end if;
 
       when ST_WR_WAIT_BUS_GRANT =>
@@ -276,7 +276,7 @@ begin
           cacheStNext <= ST_WR_WAIT_BUS_COMPLETE;
           busReq      <= '1';
           busOutEn    <= '1';
-          busCmdIn      <= BUS_WRITE_WORD;
+          busCmdIn    <= BUS_WRITE_WORD;
           busAddrIn   <= cpuReqRegAddr;
           busDataIn   <= cpuReqRegData;
         else
@@ -294,7 +294,7 @@ begin
 
   end process comb_proc;
 
----------------------------- busDataWord mux process ---------------------------
+-----------.------- Muxes not controlled by "Control" signals ------------------
 
   process (cpuReqRegWord, busData) is
   begin
@@ -304,18 +304,18 @@ begin
       busDataWord <= busData(1);
     end if;
   end process;
-  
+
   process(tagVictimSet, dataArrayRdData) is
-  begin 
-	if(tagVictimSet(0) = '0') then
-		victimRegDataIn <= dataArrayRdData(0);
-	else
-		victimRegDataIn <= dataArrayRdData(1);
-	end if;
+  begin
+    if(tagVictimSet(0) = '0') then
+      victimRegDataIn <= dataArrayRdData(0);
+	  else
+		  victimRegDataIn <= dataArrayRdData(1);
+	  end if;
   end process;
 
-  
------------- Componenents mapping -----------------------------
+
+----------------------------- Componenents mapping -----------------------------
 
  TagArray_1 : TagArray
     port map (
@@ -347,29 +347,29 @@ begin
       busOutEn		=> busOutEn,
       busCmdIn		=> busCmdIn,
       busDataIn		=> busDataIn,
-	  busAddrIn 	=> busAddrIn,
-	  busCmd 		=> busCmd,
-      busData		=> busData,
-	  busAddr		=> busAddr);
+	    busAddrIn 	=> busAddrIn,
+	    busCmd 		  => busCmd,
+      busData		  => busData,
+	    busAddr		  => busAddr);
 
   VictimReg_1 : VictimReg
 	port map (
-	 clk 				=> clk,
-	 rst 				=> rst,
+	 clk 				      => clk,
+	 rst 				      => rst,
 	 victimRegWrEn		=> victimRegWrEn,
 	 victimRegSetIn		=> tagVictimSet,
 	 victimRegDirtyIn	=> tagVictimDirty,
 	 victimRegAddrIn	=> tagVictimAddr,
 	 victimRegDataIn	=> victimRegDataIn,
-	 victimRegSet		=> victimRegSet,
+	 victimRegSet		  => victimRegSet,
 	 victimRegDirty		=> victimRegDirty,
 	 victimRegAddr		=> victimRegAddr,
 	 victimRegData		=> victimRegData);
 
   CpuReqReg_1 : CpuReqReg
 	port map (
-	 clk				=> clk,
-	 rst 				=> rst,
+	 clk				      => clk,
+	 rst 				      => rst,
 	 cpuReqRegWrEn		=> cpuReqRegWrEn,
 	 cpuReqRegAddrIn	=> cacheAddr,
 	 cpuReqRegDataIn	=> cacheWrData,
@@ -387,13 +387,12 @@ begin
 -------------------------------- Clock process ---------------------------------
 
   clk_proc : process (clk, rst) is
-  begin  -- process clk_proc
-    if rst = '0' then                   -- asynchronous reset (active low)
+  begin
+    if rst = '0' then
       cacheSt <= ST_IDLE;
-    elsif clk'event and clk = '1' then  -- rising clock edge
+    elsif clk'event and clk = '1' then
       cacheSt <= cacheStNext;
     end if;
-      -- there should be more stuff here
   end process;
 
 end architecture;
@@ -424,7 +423,7 @@ architecture tsb of BusTriStateBufferForCacheController is
 
 begin
   busData		<= busDataIn when (busOutEn = '1') else DATA_BLOCK_HIGH_IMPEDANCE;
-  busCmd  		<= busCmdIn  when (busOutEn = '1') else (others => 'Z');
+  busCmd  	<= busCmdIn  when (busOutEn = '1') else (others => 'Z');
   busAddr		<= busAddrIn when (busOutEn = '1') else (others => 'Z');
 end architecture tsb;
 
@@ -439,14 +438,15 @@ use work.mem_components.all;
 entity CpuReqReg is
 
   port (
-  clk : in std_logic;
-  rst : in std_logic;
-	cpuReqRegWrEn	:	in std_logic;
-	cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	cpuReqRegDataIn	:	in data_word_t;
-	cpuReqRegAddr	:	out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	cpuReqRegWord	:	out std_logic;
-	cpuReqRegData	: 	out data_block_t);
+    clk             : in std_logic;
+    rst             : in std_logic;
+	  cpuReqRegWrEn	  :	in std_logic;
+	  cpuReqRegAddrIn	:	in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  cpuReqRegDataIn	:	in data_word_t;
+	  cpuReqRegAddr	  :	out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  cpuReqRegWord	  :	out std_logic;
+	  cpuReqRegData	  : out data_block_t
+  );
 
 end entity CpuReqReg;
 
@@ -456,17 +456,16 @@ begin
 
   process(clk, rst)
   begin
-    
     if (rst = '0') then
-      cpuReqRegAddr <= (others => '0');
-      cpuReqRegData <= DATA_BLOCK_HIGH_IMPEDANCE;
-      cpuReqRegWord <=  '0';
+      cpuReqRegAddr      <= (others => '0');
+      cpuReqRegData      <= DATA_BLOCK_HIGH_IMPEDANCE;
+      cpuReqRegWord      <=  '0';
     elsif clk'event and clk = '1' then
       if (cpuReqRegWrEn = '1') then
-        cpuReqRegAddr <= cpuReqRegAddrIn;
+        cpuReqRegAddr    <= cpuReqRegAddrIn;
         cpuReqRegData(0) <= cpuReqRegDataIn;
         cpuReqRegData(1) <= (others => '0');
-        cpuReqRegWord <= cpuReqRegAddrIn(0);
+        cpuReqRegWord    <= cpuReqRegAddrIn(0);
       end if;
     end if;
   end process;
@@ -484,17 +483,17 @@ use work.mem_components.all;
 entity VictimReg is
 
   port (
-  clk              : in std_logic;
-  rst              : in std_logic;
-	victimRegWrEn	   : in std_logic;
-	victimRegSetIn	 : in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegDirtyIn : in std_logic;
-	victimRegAddrIn	 : in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	victimRegDataIn	 : in data_block_t;
-	victimRegSet	   : out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
-	victimRegDirty	 : out std_logic;
-	victimRegAddr	   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
-	victimRegData	   : out data_block_t);
+    clk              : in std_logic;
+    rst              : in std_logic;
+	  victimRegWrEn	   : in std_logic;
+	  victimRegSetIn	 : in std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	  victimRegDirtyIn : in std_logic;
+	  victimRegAddrIn	 : in std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+	  victimRegDataIn	 : in data_block_t;
+    victimRegSet	   : out std_logic_vector(SET_ADDR_WIDTH-1 downto 0);
+	  victimRegDirty	 : out std_logic;
+    victimRegAddr	   : out std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
+    victimRegData	   : out data_block_t);
 
 end entity VictimReg;
 
@@ -505,10 +504,10 @@ begin
   process(clk, rst)
   begin
     if (rst = '0') then
-      victimRegSet    <= (others => '0');
-      victimRegDirty  <= '0';
-      victimRegAddr   <= (others => '0');
-      victimRegData   <= DATA_BLOCK_HIGH_IMPEDANCE;
+      victimRegSet      <= (others => '0');
+      victimRegDirty    <= '0';
+      victimRegAddr     <= (others => '0');
+      victimRegData     <= DATA_BLOCK_HIGH_IMPEDANCE;
     elsif clk'event and clk = '1' then
       if (victimRegWrEn = '1') then
         victimRegSet    <= victimRegSetIn;
@@ -532,14 +531,15 @@ use work.mem_components.all;
 entity RdDataTriStateBuffer is
 
   port (
-	cacheRdOutEn	: in std_logic;
-	cacheRdDataIn	: in data_word_t;
-	cacheRdData		: out data_word_t);
+    cacheRdOutEn	: in std_logic;
+	  cacheRdDataIn	: in data_word_t;
+	  cacheRdData		: out data_word_t
+  );
 
 end entity RdDataTriStateBuffer;
 
 architecture rdtsb of RdDataTriStateBuffer is
 
 begin
-  cacheRdData   <= cacheRdDataIn when (cacheRdOutEn = '1') else DATA_WORD_HIGH_IMPEDANCE;
+  cacheRdData <= cacheRdDataIn when (cacheRdOutEn = '1') else DATA_WORD_HIGH_IMPEDANCE;
 end architecture rdtsb;

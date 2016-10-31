@@ -17,7 +17,8 @@ entity BusController is
     memAddr                                : out   std_logic_vector(WORD_ADDR_WIDTH-1 downto 0);
     memWrData                              : out   data_block_t;
     memRdData                              : in    data_block_t;
-    memDone                                : in    std_logic);
+    memDone                                : in    std_logic
+  );
 
 end entity BusController;
 
@@ -31,14 +32,15 @@ architecture rtl of BusController is
 
   -- Intern signal used to control the tri state buffer
   signal busOutEn         : std_logic;
-  
+
   component BusTriStateBufferForBusController is
     port (
-    busOutEn  : in  std_logic;
-    busDataIn : in  data_block_t;
-    busData   : out data_block_t);
+      busOutEn  : in  std_logic;
+      busDataIn : in  data_block_t;
+      busData   : out data_block_t
+    );
   end component BusTriStateBufferForBusController;
-  
+
 begin  -- architecture rtl
 
   comb_proc : process (busSt, arbiterReqValid, memDone) is
@@ -62,18 +64,17 @@ begin  -- architecture rtl
         end if;
 
       when ST_GRANT =>
-        busStNext <= ST_WAIT_MEM;
-        arbiterArbitrate <= '1';
+        busStNext                                    <= ST_WAIT_MEM;
+        arbiterArbitrate                             <= '1';
         busGrant(to_integer(unsigned(arbiterReqId))) <= '1';
-        memCs <= '1';
+        memCs                                        <= '1';
 
       when ST_WAIT_MEM =>
         if (memDone = '0') then
-          -- Do not update the state
           busGrant(to_integer(unsigned(arbiterReqId))) <= '1';
         else
           busStNext <= ST_IDLE;
-          busOutEn <= '1';
+          busOutEn  <= '1';
         end if;
 
       when others => null;
@@ -88,15 +89,17 @@ begin  -- architecture rtl
       arbiterArbitrate => arbiterArbitrate,
       arbiterBusReqIn  => busReq,
       arbiterReqValid  => arbiterReqValid,
-      arbiterReqId     => arbiterReqId);
+      arbiterReqId     => arbiterReqId
+    );
 
   BusTriStateBufferForBusController_1 : BusTriStateBufferForBusController
     port map (
       busOutEn   => busOutEn,
       busDataIn  => memRdData,
-      busData    => busData);
+      busData    => busData
+    );
 
-  
+
   clk_proc : process (clk, rst) is
   begin  -- process clk_proc
     if rst = '0' then                   -- asynchronous reset (active low)
@@ -119,7 +122,8 @@ entity BusTriStateBufferForBusController is
   port (
     busOutEn  : in  std_logic;
     busDataIn : in  data_block_t;
-    busData   : out data_block_t);
+    busData   : out data_block_t
+  );
 
 end entity BusTriStateBufferForBusController;
 

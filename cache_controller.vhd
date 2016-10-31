@@ -155,7 +155,6 @@ begin
 
     case cacheSt is
       when ST_IDLE =>
-        report "State IDLE";
         if (cacheCs = '1' and cacheWrite = '1') then
           cacheStNext   <= ST_WR_HIT_TEST;
           cpuReqRegWrEn <= '1';
@@ -174,7 +173,6 @@ begin
       -- Read state machine
       -----------------------------------------------------------------------
       when ST_RD_HIT_TEST =>
-        report "State rd hit test";
         if (tagHitEn = '1') then
           cacheStNext   <= ST_IDLE;
           cacheDone     <= '1';
@@ -190,7 +188,6 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_GRANT_ACC =>
-      report "state rd wait bus grant acc";
         if (busGrant = '1') then
           cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_ACC;
           busReq      <= '1';
@@ -202,7 +199,6 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_COMPLETE_ACC =>
-      report "state rd waut bus complete acc";
         if (busGrant = '0' and victimRegDirty = '0') then
           cacheStNext       <= ST_IDLE;
           cacheDone         <= '1';
@@ -229,7 +225,6 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_GRANT_WB =>
-      report "state rd wait bus grant wb";
         if (busGrant = '1') then
           cacheStNext <= ST_RD_WAIT_BUS_COMPLETE_WB;
           busReq      <= '1';
@@ -242,7 +237,6 @@ begin
         end if;
 
       when ST_RD_WAIT_BUS_COMPLETE_WB =>
-      report "state rd wait bus complete wb";
         if (busGrant = '1') then
           dataArrayAddr <= cpuReqRegAddr;
         else
@@ -278,7 +272,6 @@ begin
         end if;
 
       when ST_WR_WAIT_BUS_GRANT =>
-      report "state wr wait bus grant";
         if (busGrant = '1') then
           cacheStNext <= ST_WR_WAIT_BUS_COMPLETE;
           busReq      <= '1';
@@ -286,13 +279,11 @@ begin
           busCmdIn      <= BUS_WRITE_WORD;
           busAddrIn   <= cpuReqRegAddr;
           busDataIn   <= cpuReqRegData;
-          report "hellooooo " & integer'image(to_integer(unsigned(flattenBlock(cpuReqRegData))));
         else
           busReq      <= '1';
         end if;
 
       when ST_WR_WAIT_BUS_COMPLETE =>
-      report "state wr wait bus complete";
         if (busGrant = '0') then
           cacheStNext <= ST_IDLE;
           cacheDone   <= '1';
@@ -313,6 +304,16 @@ begin
       busDataWord <= busData(1);
     end if;
   end process;
+  
+  process(tagVictimSet, dataArrayRdData) is
+  begin 
+	if(tagVictimSet(0) = '0') then
+		victimRegDataIn <= dataArrayRdData(0);
+	else
+		victimRegDataIn <= dataArrayRdData(1);
+	end if;
+  end process;
+
   
 ------------ Componenents mapping -----------------------------
 
